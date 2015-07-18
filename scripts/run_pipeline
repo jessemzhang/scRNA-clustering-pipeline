@@ -1,0 +1,22 @@
+#!/bin/bash 
+
+data_dest='/data/jessez/Gene_count_datasets/Datasets'
+gene_dest='/data/jessez/Gene_count_datasets/Genes'
+batch_dest='/data/jessez/Gene_count_datasets/Batch_nums'
+
+data=$data_dest'/X'
+batches=$batch_dest'/batch_num.txt'
+labels='../labels_kmeans_after_PCA.txt'
+genes=$gene_dest'/genes.txt'
+new_genes='../important_genes.txt'
+
+# # Run clustering algorithm(s)
+
+# # Analyze batch effect
+# python check_batch_effects.py $labels $batches
+
+# # Extract important genes
+# python RF_to_select_important_genes.py $data $labels $genes > $new_genes
+
+# Check for consistency with D1 D2 genes
+python check_D1D2_genes.py $data $labels $genes $new_genes
