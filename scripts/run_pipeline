@@ -1,13 +1,19 @@
 #!/bin/bash 
 
-data_dest='/data/jessez/Gene_count_datasets/Datasets'
-gene_dest='/data/jessez/Gene_count_datasets/Genes'
-batch_dest='/data/jessez/Gene_count_datasets/Batch_nums'
+# data_dest='/data/jessez/Gene_count_datasets/Datasets'
+# gene_dest='/data/jessez/Gene_count_datasets/Genes'
+# batch_dest='/data/jessez/Gene_count_datasets/Batch_nums'
 
-data=$data_dest'/X'
-batches=$batch_dest'/batch_num.txt'
+# data=$data_dest'/X'
+# batches=$batch_dest'/batch_num.txt'
+# labels='../labels_kmeans_after_PCA.txt'
+# genes=$gene_dest'/genes.txt'
+# new_genes='../important_genes.txt'
+
+data='../data/gene_abundances.txt'
 labels='../labels_kmeans_after_PCA.txt'
-genes=$gene_dest'/genes.txt'
+genes='../data/genes.txt'
+batches='../data/batch_num.txt'
 new_genes='../important_genes.txt'
 
 # # Run clustering algorithm(s)
