@@ -11,7 +11,7 @@
 # new_genes='../important_genes.txt'
 
 data='../data/gene_abundances.txt'
-labels='../labels_kmeans_after_PCA.txt'
+labels='../labels_kmeans.txt'
 genes='../data/genes.txt'
 batches='../data/batch_num.txt'
 new_genes='../important_genes.txt'
@@ -19,7 +19,7 @@ new_genes='../important_genes.txt'
 # # Run clustering algorithm(s)
 
 # # Analyze batch effect
-# python check_batch_effects.py $labels $batches
+python check_batch_effects.py $labels $batches
 
 # # Extract important genes
 # python RF_to_select_important_genes.py $data $labels $genes > $new_genes
