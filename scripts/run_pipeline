@@ -10,19 +10,26 @@
 # genes=$gene_dest'/genes.txt'
 # new_genes='../important_genes.txt'
 
+clustering_method='spectral'
+
 data='../data/gene_abundances.txt'
-labels='../labels_kmeans.txt'
+labels='../labels/labels_'$clustering_method'.txt'
 genes='../data/genes.txt'
 batches='../data/batch_num.txt'
 new_genes='../important_genes.txt'
 
-# # Run clustering algorithm(s)
+# Run clustering algorithm(s)
+echo "Running clustering algorithms.."
+python 'scikit_'$clustering_method'.py' $data > $labels
 
-# # Analyze batch effect
+# Analyze batch effect
+echo "Checking batch effects.. (lower log(p-value) = more batch effect)"
 python check_batch_effects.py $labels $batches
 
-# # Extract important genes
-# python RF_to_select_important_genes.py $data $labels $genes > $new_genes
+# Extract important genes
+echo "Extracting important genes.. "
+python RF_to_select_important_genes.py $data $labels $genes > $new_genes
 
 # Check for consistency with D1 D2 genes
+echo "Checking D1/D2 genes.."
 python check_D1D2_genes.py $data $labels $genes $new_genes

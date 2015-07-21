@@ -102,7 +102,7 @@ count_labels = np.array([np.sum(labels==uniq_labels[0]),np.sum(labels!=uniq_labe
 all_genes = np.loadtxt(sys.argv[3],dtype=str)
 
 # read in D1/D2 genes
-d1d2_genes = np.loadtxt('/data/jessez/Gene_count_datasets/Genes/genes_d1d2.txt',dtype=str)
+d1d2_genes = np.loadtxt('../data/genes_d1d2.txt',dtype=str)
 
 # determine clustering quality!
 determine_clustering_quality(X,labels,uniq_labels,count_labels,d1d2_genes)
