@@ -14,13 +14,15 @@ clustering_method='spectral'
 
 data='../data/gene_abundances.txt'
 labels='../labels/labels_'$clustering_method'.txt'
+labels='../labels/labels_matlab_kmeans.txt'
+labels='../labels/labels_random.txt'
 genes='../data/genes.txt'
 batches='../data/batch_num.txt'
-new_genes='../important_genes.txt'
+new_genes='important_genes.txt'
 
 # Run clustering algorithm(s)
-echo "Running clustering algorithms.."
-python 'scikit_'$clustering_method'.py' $data > $labels
+# echo "Running clustering algorithms.."
+# python 'scikit_'$clustering_method'.py' $data > $labels
 
 # Analyze batch effect
 echo "Checking batch effects.. (lower log(p-value) = more batch effect)"
