@@ -50,9 +50,9 @@ def test_gene(clust_0,clust_1,thresh,labels,count_labels,gene):
     test_results = []
     test_results.append(gene)
     if np.mean(clust_0) > np.mean(clust_1):
-        test_results.append('Cluster 0')
+        test_results.append('0')
     else:
-        test_results.append('Cluster 1')
+        test_results.append('1')
     test_results.append(np.min([p_using_greater,p_using_less]))
 
     return test_results     
@@ -86,8 +86,8 @@ def determine_clustering_quality(X,labels,uniq_labels,label_counts,genes):
             add_data = p_0
 
         save_data.append(add_data)
-
-    print '\n' + tabulate(save_data,headers=['Gene','Cluster Assignment','log(p-value)']) + '\n'
+    return save_data
+    # print '\n' + tabulate(save_data,headers=['Gene','Cluster Assignment','log(p-value)']) + '\n'
 
 
 # read in data matrix
@@ -105,9 +105,20 @@ all_genes = np.loadtxt(sys.argv[3],dtype=str)
 d1d2_genes = np.loadtxt('../data/genes_d1d2.txt',dtype=str)
 
 # determine clustering quality!
-determine_clustering_quality(X,labels,uniq_labels,count_labels,d1d2_genes)
+qual = determine_clustering_quality(X,labels,uniq_labels,count_labels,d1d2_genes)
 
 if len(sys.argv) > 4:
     # read in important genes
     important_genes = np.loadtxt(sys.argv[4],dtype=str)
-    determine_clustering_quality(X,labels,uniq_labels,count_labels,important_genes[np.random.permutation(99)[0:9]])
+    qual_important_genes = determine_clustering_quality(X,labels,uniq_labels,count_labels,important_genes[np.random.permutation(99)[0:9]])
+
+# print stuff
+for entry in qual:
+    sys.stdout.write(entry[0]+":"+entry[1]+":"+str(entry[2])[0:7]+"\t")
+
+sum = 0
+i = 1
+for entry in qual_important_genes:
+    sum += entry[2]
+    i += 1
+sys.stdout.write(str(sum/i))

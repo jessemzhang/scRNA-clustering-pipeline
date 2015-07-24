@@ -1,37 +1,107 @@
 #!/bin/bash 
 
-# data_dest='/data/jessez/Gene_count_datasets/Datasets'
-# gene_dest='/data/jessez/Gene_count_datasets/Genes'
-# batch_dest='/data/jessez/Gene_count_datasets/Batch_nums'
+# This script will test a clustering method for lots of datasets
 
-# data=$data_dest'/X'
-# batches=$batch_dest'/batch_num.txt'
-# labels='../labels_kmeans_after_PCA.txt'
-# genes=$gene_dest'/genes.txt'
-# new_genes='../important_genes.txt'
+clust_language=$1   # either 'Rscript' or 'python'
+clust_method=$2     # file name of clustering script
 
-clustering_method='spectral'
+data_dir="/data/jessez/Gene_count_datasets"
+results_dir="/data/jessez/Gene_count_clustering_results/"$clust_method
+results_labels_dir=$results_dir"/labels"
+results_new_genes_dir=$results_dir"/new_genes"
+results_outfile=$results_dir"/out"
 
-data='../data/gene_abundances.txt'
-labels='../labels/labels_'$clustering_method'.txt'
-labels='../labels/labels_matlab_kmeans.txt'
-labels='../labels/labels_random.txt'
-genes='../data/genes.txt'
-batches='../data/batch_num.txt'
-new_genes='important_genes.txt'
+mkdir $results_dir
+mkdir $results_labels_dir
+mkdir $results_new_genes_dir
+touch $results_outfile
 
-# Run clustering algorithm(s)
-# echo "Running clustering algorithms.."
-# python 'scikit_'$clustering_method'.py' $data > $labels
+# function to run clustering for a type of dataset
+run_clustering() {
+    
+    local batch_type=$1 # either "all", "22_23", "24_28_30", or "single"
+    batch_dir=$data_dir"/Datasets/batch_"$batch_type
 
-# Analyze batch effect
-echo "Checking batch effects.. (lower log(p-value) = more batch effect)"
-python check_batch_effects.py $labels $batches
+    # Iterate through each dataset
+    for i in `ls $batch_dir`;
+    do
+	echo $i
+	data=$batch_dir"/"$i
+	echo -en $i"\t"$clust_method"\t" >> $results_outfile
+	
+	# Run the clustering algorithm
+	labels=$results_labels_dir"/labels_"$i # file to save labels in
+	if [ "$clust_language" == "Rscript" ]; then
+	    Rscript $clust_method".R" $data > $labels
+	else
+	    python $clust_method".py" $data > $labels
+	fi
+	
+	# Analyze batch effect
+	if [ "$batch_type" != "single" ]; then
+	    batches=$data_dir"/Batch_nums/batch_num_"$batch_type".txt"
+	    batch_check=`python check_batch_effects.py $labels $batches`
+	    echo -en $batch_check"\t" >> $results_outfile
+	else
+	    echo -en "NA\t" >> $results_outfile
+	fi
 
-# Extract important genes
-echo "Extracting important genes.. "
-python RF_to_select_important_genes.py $data $labels $genes > $new_genes
+	# Extract important genes
+	new_genes=$results_new_genes_dir"/new_genes_"$i
+	if [ `echo $i | grep d1d2 | wc -l` == 1 ]; then
+	    # check to see if we're looking at a d1d2 dataset
+	    # (in which case we extract genes using original dataset)
+	    check_data=`echo $data | sed 's/_d1d2//g'`
+        else
+	    check_data=$data
+        fi
+	if [ `echo $i | grep htseq | wc -l` == 1 ]; then
+	    # check to see if we're looking at an htseq dataset
+	    genes=$data_dir"/Genes/genes_htseq.txt"
+	else
+	    genes=$data_dir"/Genes/genes.txt"
+	fi
+ 	python RF_to_select_important_genes.py $check_data $labels $genes > $new_genes
+        
+	# Check for consistency with D1 D2 genes
+	d1d2_check=`python check_D1D2_genes.py $check_data $labels $genes $new_genes`   
+	echo -e $d1d2_check >> $results_outfile
+#	break;
+    done;
+}
 
-# Check for consistency with D1 D2 genes
-echo "Checking D1/D2 genes.."
-python check_D1D2_genes.py $data $labels $genes $new_genes
+run_clustering "all"
+run_clustering "22_23"
+run_clustering "24_28_30"
+run_clustering "single"
+
+# working code -----------------------------------------------------------------
+
+# clustering_method='spectral'
+
+# data='../data/gene_abundances.txt'
+# labels='../labels/labels_'$clustering_method'.txt'
+# labels='../labels/labels_matlab_kmeans.txt'
+# labels='../labels/labels_random.txt'
+# genes='../data/genes.txt'
+# batches='../data/batch_num.txt'
+# new_genes='important_genes.txt'
+
+# # Run clustering algorithm(s)
+# # echo "Running clustering algorithms.."
+# # python 'scikit_'$clustering_method'.py' $data > $labels
+
+# # Analyze batch effect
+# echo "Checking batch effects.. (lower log(p-value) = more batch effect)"
+# python check_batch_effects.py $labels $batches
+
+# # Extract important genes
+# echo "Extracting important genes.. "
+# python RF_to_select_important_genes.py $data $labels $genes > $new_genes
+
+# # Check for consistency with D1 D2 genes
+# echo "Checking D1/D2 genes.."
+# python check_D1D2_genes.py $data $labels $genes $new_genes
+
+# end working code -------------------------------------------------------------
+
