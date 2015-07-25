@@ -36,7 +36,12 @@ run_clustering() {
 	else
 	    python $clust_method".py" $data > $labels
 	fi
-	
+
+	# Save the number of samples in each cluster
+	count_0=`cat $labels | grep 0 | wc -l`
+	count_1=`cat $labels | grep 1 | wc -l`
+	echo -en $count_0"\t"$count_1"\t" >> $results_outfile
+
 	# Analyze batch effect
 	if [ "$batch_type" != "single" ]; then
 	    batches=$data_dir"/Batch_nums/batch_num_"$batch_type".txt"
@@ -66,7 +71,7 @@ run_clustering() {
 	# Check for consistency with D1 D2 genes
 	d1d2_check=`python check_D1D2_genes.py $check_data $labels $genes $new_genes`   
 	echo -e $d1d2_check >> $results_outfile
-#	break;
+	
     done;
 }
 

@@ -113,8 +113,15 @@ if len(sys.argv) > 4:
     qual_important_genes = determine_clustering_quality(X,labels,uniq_labels,count_labels,important_genes[np.random.permutation(99)[0:9]])
 
 # print stuff
-for entry in qual:
-    sys.stdout.write(entry[0]+":"+entry[1]+":"+str(entry[2])[0:7]+"\t")
+for i in range(0,len(qual)-1):
+    sys.stdout.write(qual[i][0]+":")
+sys.stdout.write(qual[len(qual)-1][0]+"\t")
+for i in range(0,len(qual)-1):
+    sys.stdout.write(qual[i][1])
+sys.stdout.write(qual[len(qual)-1][1]+"\t")
+for i in range(0,len(qual)-1):
+    sys.stdout.write(str(qual[i][2])[0:7]+":")
+sys.stdout.write(str(qual[len(qual)-1][2])[0:7]+"\t")
 
 sum = 0
 i = 1
