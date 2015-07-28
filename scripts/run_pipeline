@@ -32,7 +32,7 @@ run_clustering() {
 	# Run the clustering algorithm
 	labels=$results_labels_dir"/labels_"$i # file to save labels in
 	if [ "$clust_language" == "Rscript" ]; then
-	    Rscript $clust_method".R" $data > $labels
+	    Rscript $clust_method".R" $data | awk -F " " '{print $2}' > $labels
 	else
 	    python $clust_method".py" $data > $labels
 	fi
@@ -41,6 +41,10 @@ run_clustering() {
 	count_0=`cat $labels | grep 0 | wc -l`
 	count_1=`cat $labels | grep 1 | wc -l`
 	echo -en $count_0"\t"$count_1"\t" >> $results_outfile
+
+	# Compute clustering quality
+	clustering_quality=`python compute_clustering_quality.py $data $labels`
+	echo -en $clustering_quality"\t" >> $results_outfile
 
 	# Analyze batch effect
 	if [ "$batch_type" != "single" ]; then
@@ -58,7 +62,12 @@ run_clustering() {
 	    # (in which case we extract genes using original dataset)
 	    check_data=`echo $data | sed 's/_d1d2//g'`
         else
-	    check_data=$data
+	    if [ `echo $i | grep Meisam | wc -l` == 1 ]; then
+		# check to see if we're looking at a data matrix made using Meisam's suggested genes
+		check_data=`echo $data | sed 's/_Meisam//g'`
+	    else
+		check_data=$data
+	    fi
         fi
 	if [ `echo $i | grep htseq | wc -l` == 1 ]; then
 	    # check to see if we're looking at an htseq dataset

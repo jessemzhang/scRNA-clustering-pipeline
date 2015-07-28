@@ -20,4 +20,3 @@ if __name__ == "__main__":
     labels = run_clustering(X)
     for label in labels:
         print label
-

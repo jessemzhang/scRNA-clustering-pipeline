@@ -10,6 +10,13 @@ import scipy as sp
 import scipy.stats
 from tabulate import tabulate
 
+def correct_nan(x):
+    # if the value is NaN, change it to 1 (greater than any possibly log p value)
+    if np.sum(np.isnan(x)) > 0:
+        return 1
+    else:
+        return x
+
 def chi_squared_test(count_0,count_1,labels,count_labels):
     # this function tests if the count distribution of samples between two clusters significantly deviates from no info
     p_obs = np.array([count_0,count_1])
@@ -45,6 +52,10 @@ def test_gene(clust_0,clust_1,thresh,labels,count_labels,gene):
     p_using_greater = np.log(chi_squared_test(count_0_greater_thresh,count_1_greater_thresh,labels,count_labels))
     # print '  with less'
     p_using_less = np.log(chi_squared_test(count_0_less_thresh,count_1_less_thresh,labels,count_labels))
+
+    # correct for nans, just in case
+    p_using_greater = correct_nan(p_using_greater)
+    p_using_less = correct_nan(p_using_less)
     
     # use the smaller p-value
     test_results = []
