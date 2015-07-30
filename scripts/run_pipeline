@@ -16,8 +16,69 @@ mkdir $results_labels_dir
 mkdir $results_new_genes_dir
 touch $results_outfile
 
+pipeline() {
+
+    i=$1
+    batch_type=$2
+
+    echo $i
+    data=$batch_dir"/"$i
+
+    # Run the clustering algorithm
+    labels=$results_labels_dir"/labels_"$i # file to save labels in
+    if [ "$clust_language" == "Rscript" ]; then
+	Rscript $clust_method".R" $data | awk -F " " '{print $2}' > $labels
+    else
+	python $clust_method".py" $data > $labels
+    fi
+
+    # Save the number of samples in each cluster
+    count_0=`cat $labels | grep 0 | wc -l`
+    count_1=`cat $labels | grep 1 | wc -l`
+
+    # Compute clustering quality
+    clustering_quality=`python compute_clustering_quality.py $data $labels`
+
+    # Analyze batch effect
+    if [ "$batch_type" != "single" ]; then
+	batches=$data_dir"/Batch_nums/batch_num_"$batch_type".txt"
+	batch_check=`python check_batch_effects.py $labels $batches`
+    else
+	batch_check='0'
+    fi
+
+    # Extract important genes
+    new_genes=$results_new_genes_dir"/new_genes_"$i
+    if [ `echo $i | grep d1d2 | wc -l` == 1 ]; then
+	# check to see if we're looking at a d1d2 dataset
+	# (in which case we extract genes using original dataset)
+	check_data=`echo $data | sed 's/_d1d2//g'`
+    else
+	if [ `echo $i | grep Meisam | wc -l` == 1 ]; then
+	# check to see if we're looking at a data matrix made using Meisam's suggested genes
+	check_data=`echo $data | sed 's/_Meisam//g'`
+	else
+	check_data=$data
+	fi
+    fi
+    if [ `echo $i | grep htseq | wc -l` == 1 ]; then
+	# check to see if we're looking at an htseq dataset
+	genes=$data_dir"/Genes/genes_htseq.txt"
+    else
+	genes=$data_dir"/Genes/genes.txt"
+    fi
+    python RF_to_select_important_genes.py $check_data $labels $genes > $new_genes
+
+    # Check for consistency with D1 D2 genes
+    d1d2_check=`python check_all_genes.py $check_data $labels $genes $new_genes`   
+
+    # Save all data in new line
+    new_line=$i"\t"$clust_method"\t"$count_0"\t"$count_1"\t"$clustering_quality"\t"$batch_check"\t"$d1d2_check
+    echo -e $new_line >> $results_outfile
+}
+
 # function to run clustering for a type of dataset
-run_clustering() {
+parallelize_pipeline() {
     
     local batch_type=$1 # either "all", "22_23", "24_28_30", or "single"
     batch_dir=$data_dir"/Datasets/batch_"$batch_type
@@ -25,97 +86,11 @@ run_clustering() {
     # Iterate through each dataset
     for i in `ls $batch_dir`;
     do
-	echo $i
-	data=$batch_dir"/"$i
-	echo -en $i"\t"$clust_method"\t" >> $results_outfile
-	
-	# Run the clustering algorithm
-	labels=$results_labels_dir"/labels_"$i # file to save labels in
-	if [ "$clust_language" == "Rscript" ]; then
-	    Rscript $clust_method".R" $data | awk -F " " '{print $2}' > $labels
-	else
-	    python $clust_method".py" $data > $labels
-	fi
-
-	# Save the number of samples in each cluster
-	count_0=`cat $labels | grep 0 | wc -l`
-	count_1=`cat $labels | grep 1 | wc -l`
-	echo -en $count_0"\t"$count_1"\t" >> $results_outfile
-
-	# Compute clustering quality
-	clustering_quality=`python compute_clustering_quality.py $data $labels`
-	echo -en $clustering_quality"\t" >> $results_outfile
-
-	# Analyze batch effect
-	if [ "$batch_type" != "single" ]; then
-	    batches=$data_dir"/Batch_nums/batch_num_"$batch_type".txt"
-	    batch_check=`python check_batch_effects.py $labels $batches`
-	    echo -en $batch_check"\t" >> $results_outfile
-	else
-	    echo -en "NA\t" >> $results_outfile
-	fi
-
-	# Extract important genes
-	new_genes=$results_new_genes_dir"/new_genes_"$i
-	if [ `echo $i | grep d1d2 | wc -l` == 1 ]; then
-	    # check to see if we're looking at a d1d2 dataset
-	    # (in which case we extract genes using original dataset)
-	    check_data=`echo $data | sed 's/_d1d2//g'`
-        else
-	    if [ `echo $i | grep Meisam | wc -l` == 1 ]; then
-		# check to see if we're looking at a data matrix made using Meisam's suggested genes
-		check_data=`echo $data | sed 's/_Meisam//g'`
-	    else
-		check_data=$data
-	    fi
-        fi
-	if [ `echo $i | grep htseq | wc -l` == 1 ]; then
-	    # check to see if we're looking at an htseq dataset
-	    genes=$data_dir"/Genes/genes_htseq.txt"
-	else
-	    genes=$data_dir"/Genes/genes.txt"
-	fi
- 	python RF_to_select_important_genes.py $check_data $labels $genes > $new_genes
-        
-	# Check for consistency with D1 D2 genes
-	d1d2_check=`python check_D1D2_genes.py $check_data $labels $genes $new_genes`   
-	echo -e $d1d2_check >> $results_outfile
-	
+	pipeline $i $batch_type &
     done;
 }
 
-run_clustering "all"
-run_clustering "22_23"
-run_clustering "24_28_30"
-run_clustering "single"
-
-# working code -----------------------------------------------------------------
-
-# clustering_method='spectral'
-
-# data='../data/gene_abundances.txt'
-# labels='../labels/labels_'$clustering_method'.txt'
-# labels='../labels/labels_matlab_kmeans.txt'
-# labels='../labels/labels_random.txt'
-# genes='../data/genes.txt'
-# batches='../data/batch_num.txt'
-# new_genes='important_genes.txt'
-
-# # Run clustering algorithm(s)
-# # echo "Running clustering algorithms.."
-# # python 'scikit_'$clustering_method'.py' $data > $labels
-
-# # Analyze batch effect
-# echo "Checking batch effects.. (lower log(p-value) = more batch effect)"
-# python check_batch_effects.py $labels $batches
-
-# # Extract important genes
-# echo "Extracting important genes.. "
-# python RF_to_select_important_genes.py $data $labels $genes > $new_genes
-
-# # Check for consistency with D1 D2 genes
-# echo "Checking D1/D2 genes.."
-# python check_D1D2_genes.py $data $labels $genes $new_genes
-
-# end working code -------------------------------------------------------------
-
+parallelize_pipeline "all"
+parallelize_pipeline "22_23"
+parallelize_pipeline "24_28_30"
+parallelize_pipeline "single"

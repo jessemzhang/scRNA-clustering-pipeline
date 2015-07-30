@@ -29,6 +29,7 @@ p = np.array([count_0,count_1]).astype(float)/(count_0+count_1)
 
 # run through each batch number and perform chi-squared test
 overall_log_p = 0;
+i = 0;
 for batch in uniq_batches:
 
     sample_ind = 0
@@ -55,6 +56,7 @@ for batch in uniq_batches:
     # print test[1]
 
     overall_log_p += np.log(test[1])
+    i += 1
 
-print overall_log_p
+print overall_log_p/i
 
