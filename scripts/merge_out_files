@@ -1,0 +1,9 @@
+out_merged="/data/jessez/Gene_count_clustering_results/out_merged"
+rm $out_merged
+touch $outmerged
+for i in `ls /data/jessez/Gene_count_clustering_results`;
+do
+	if [ `echo $i | grep out_merged | wc -l` != 1 ]; then 
+		cat "/data/jessez/Gene_count_clustering_results/"$i"/out" >> $out_merged
+	fi
+done

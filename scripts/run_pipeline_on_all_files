@@ -27,9 +27,9 @@ pipeline() {
     # Run the clustering algorithm
     labels=$results_labels_dir"/labels_"$i # file to save labels in
     if [ "$clust_language" == "Rscript" ]; then
-	Rscript $clust_method".R" $data | awk -F " " '{print $2}' > $labels
+	Rscript "./clustering_scripts/"$clust_method".R" $data | awk -F " " '{print $2}' > $labels
     else
-	python $clust_method".py" $data > $labels
+	python "./clustering_scripts/"$clust_method".py" $data > $labels
     fi
 
     # Save the number of samples in each cluster

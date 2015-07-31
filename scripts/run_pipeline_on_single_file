@@ -1,0 +1,66 @@
+#!/bin/bash 
+
+# This script will test all clustering method for a single datasets
+
+# Inputs: Data used to generate labels, data used to test labels (same # of samples as first argument, but maybe different number of features), batch numbers (or "single" if single batch), gene names for second argument
+
+data=$1
+check_data=$2
+batches=$3
+genes=$4
+
+file=`echo $data | awk -F "/" '{print $NF}'`
+results_dir="/data/jessez/Gene_count_clustering_results/"$file
+results_labels_dir=$results_dir"/labels"
+results_new_genes_dir=$results_dir"/new_genes"
+results_outfile=$results_dir"/out"
+
+mkdir $results_dir
+mkdir $results_labels_dir
+mkdir $results_new_genes_dir
+touch $results_outfile
+
+pipeline() {
+
+    local clust_method=$1
+    echo $clust_method
+
+    # Run the clustering algorithm
+    labels=$results_labels_dir"/labels_"$i"_"$clust_method # file to save labels in
+    # if [ "$clust_language" == "Rscript" ]; then
+    # 	Rscript "./clustering_scripts/"$clust_method".R" $data | awk -F " " '{print $2}' > $labels
+    # else
+    python "./clustering_scripts/"$clust_method".py" $data > $labels
+    # fi
+
+    # Save the number of samples in each cluster
+    count_0=`cat $labels | grep 0 | wc -l`
+    count_1=`cat $labels | grep 1 | wc -l`
+
+    # Compute clustering quality
+    clustering_quality=`python compute_clustering_quality.py $data $labels`
+
+    # Analyze batch effect
+    if [ "$batches" != "single" ]; then
+	batch_check=`python check_batch_effects.py $labels $batches`
+    else
+	batch_check='0'
+    fi
+
+    # Extract important genes
+    new_genes=$results_new_genes_dir"/new_genes_"$file"_"$clust_method
+    python RF_to_select_important_genes.py $check_data $labels $genes > $new_genes
+
+    # Check for consistency with D1 D2 genes
+    d1d2_check=`python check_all_genes.py $check_data $labels $genes $new_genes`   
+
+    # Save all data in new line
+    new_line=$file"\t"$clust_method"\t"$count_0"\t"$count_1"\t"$clustering_quality"\t"$batch_check"\t"$d1d2_check
+    echo -e $new_line >> $results_outfile
+}
+
+for i in `ls ./clustering_scripts`;
+do
+    clust_method=`echo $i | sed 's/.py//g'`
+    pipeline $clust_method
+done;
