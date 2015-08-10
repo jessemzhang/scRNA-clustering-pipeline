@@ -4,6 +4,7 @@ import sys
 import numpy as np
 from sklearn import cluster
 import sklearn.metrics
+from clustering_functions import *
 
 def valiant_dist(x,y):
     x = x.astype(float)
@@ -11,7 +12,9 @@ def valiant_dist(x,y):
     a = x + y
     b = x - y
     c = (a != 0)
-    return np.sum((np.square(b[c])-a[c])/a[c])
+    # for entries that have x + y = 0, the contribution should be -1)
+    D = (np.sum((np.square(b[c])-a[c])/a[c])-(len(x)-np.sum(c)))
+    return D
 
 def compute_affinity_matrix(X):
     # Find the L2 norm between each two pair of points..
@@ -33,9 +36,15 @@ def run_clustering(X):
     return labels
 
 if __name__ == "__main__":
-    # LOAD DATA
+
+    # LOAD DATA                                                                                  
     X = np.loadtxt(sys.argv[1])
-    labels = run_clustering(X)
+    loc = sys.argv[2]
+    cells = np.loadtxt(sys.argv[3])
+    
+    n = float(np.shape(X)[0]) # number of samples                                                       
+
+    labels = cluster_and_account_for_outliers(X,n,run_clustering,loc,cells)
     for label in labels:
         print label
 

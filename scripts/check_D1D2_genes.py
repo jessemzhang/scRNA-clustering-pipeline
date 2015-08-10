@@ -123,7 +123,17 @@ if len(sys.argv) > 4:
     important_genes = np.loadtxt(sys.argv[4],dtype=str)
     qual_important_genes = determine_clustering_quality(X,labels,uniq_labels,count_labels,important_genes[np.random.permutation(99)[0:9]])
 
-# print stuff version 1: gene names, cluster assignments, pvalues (and mean of pvalues of important genes)
+# test random genes
+rand_flag = sys.argv[5]
+if rand_flag == 'htseq':
+    rand_genes = np.loadtxt('../data/genes_rand_htseq.txt')
+else
+    rand_genes = np.loadtxt('../data/genes_rand.txt')
+qual_rand_genes = determine_clustering_quality(X,labels,uniq_labels,count_labels,rand_genes)
+
+# print gene names, cluster assignments, pvalues (and mean of pvalues of important genes)
+# (also include L0 norm of cluster assignment to 000011111 or 111100000, mean of pvalues of D1/D2 genes)
+
 for i in range(0,len(qual)-1):
     sys.stdout.write(qual[i][0]+":")
 sys.stdout.write(qual[len(qual)-1][0]+"\t")
@@ -134,14 +144,6 @@ for i in range(0,len(qual)-1):
     sys.stdout.write(str(qual[i][2])[0:7]+":")
 sys.stdout.write(str(qual[len(qual)-1][2])[0:7]+"\t")
 
-# sum = 0
-# i = 1
-# for entry in qual_important_genes:
-#     sum += entry[2]
-#     i += 1
-# sys.stdout.write(str(sum/i))
-
-# print stuff version 2: also include L0 norm of cluster assignment to 000011111 or 111100000, mean of pvalues of D1/D2 genes
 diff_000011111 = 0
 diff_111100000 = 0
 for i in range(0,4):
@@ -166,6 +168,13 @@ sys.stdout.write(str(sum/i)+"\t")
 sum = 0
 i = 1
 for entry in qual_important_genes:
+    sum += entry[2]
+    i += 1
+sys.stdout.write(str(sum/i)+"\t")
+
+sum = 0
+i = 1
+for entry in qual_rand_genes:
     sum += entry[2]
     i += 1
 sys.stdout.write(str(sum/i))

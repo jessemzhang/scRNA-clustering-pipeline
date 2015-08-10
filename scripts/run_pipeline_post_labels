@@ -1,38 +1,26 @@
 #!/bin/bash 
 
-# This script will test all clustering method for a single datasets
+# This script will test all full-sized data matrices for a custom distance matrix
 
-# Inputs: Data used to generate labels, data used to test labels (same # of samples as first argument, but maybe different number of features), batch numbers (or "single" if single batch), gene names for second argument
+# Inputs: Data used to generate labels, data used to test labels (same # of samples as first argument, but maybe different number of features), batch numbers (or "single" if single batch), gene names for second argument, custom labels, custom of the clust method
 
 data=$1
 check_data=$2
 batches=$3
 genes=$4
+labels=$5
+clust_method=$6
 
 file=`echo $data | awk -F "/" '{print $NF}'`
-results_dir="/data/jessez/Gene_count_clustering_results/"$file
-results_labels_dir=$results_dir"/labels"
+results_dir="/data/jessez/Gene_count_clustering_results/"$clust_method
 results_new_genes_dir=$results_dir"/new_genes"
 results_outfile=$results_dir"/out"
 
 mkdir $results_dir
-mkdir $results_labels_dir
 mkdir $results_new_genes_dir
 touch $results_outfile
 
 pipeline() {
-
-    local clust_method=$1
-    local script_type=$2
-    echo $clust_method
-
-    # Run the clustering algorithm
-    labels=$results_labels_dir"/labels_"$i"_"$clust_method # file to save labels in
-    if [ "$script_type" == "R" ]; then
-    	Rscript "./clustering_scripts/"$clust_method".R" $data | awk -F " " '{print $2}' > $labels
-    else
-	python "./clustering_scripts/"$clust_method".py" $data > $labels
-    fi
 
     # Save the number of samples in each cluster
     count_0=`cat $labels | grep 0 | wc -l`
@@ -60,12 +48,4 @@ pipeline() {
     echo -e $new_line >> $results_outfile
 }
 
-for i in `ls ./clustering_scripts`;
-do
-    clust_method=`echo $i | sed 's/.py//g' | sed 's/.R//g'`
-    script_type=`echo $i | awk -F "." '{print $2}'`
-
-    if [ "$i" != "scikit_spectral_custom.py" ]; then
-	pipeline $clust_method $script_type
-    fi
-done;
+pipeline

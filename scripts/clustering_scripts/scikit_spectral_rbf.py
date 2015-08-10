@@ -4,6 +4,7 @@ import sys
 import numpy as np
 from sklearn import cluster
 import sklearn.metrics
+from clustering_functions import *
 
 def compute_affinity_matrix(X):
     # valid metrics are: 'rbf', 'sigmoid', 'polynomial', 'poly', 'linear', 'cosine'
@@ -19,9 +20,13 @@ def run_clustering(X):
     return labels
 
 if __name__ == "__main__":
+
     # LOAD DATA
     X = np.loadtxt(sys.argv[1])
-    labels = run_clustering(X)
+    loc = sys.argv[2]
+    cells = np.loadtxt(sys.argv[3])
+    n = float(np.shape(X)[0]) # number of samples                                                                                                                                         
+
+    labels = cluster_and_account_for_outliers(X,n,run_clustering,loc,cells)
     for label in labels:
         print label
-

@@ -122,6 +122,14 @@ if len(sys.argv) > 4:
     important_genes = np.loadtxt(sys.argv[4],dtype=str)
     qual_important_genes = extract_gene_stats(qual,important_genes)
 
+# test random genes                                                                                                                                                             
+rand_flag = sys.argv[5]
+if rand_flag == 'htseq':
+    rand_genes = np.loadtxt('/data/jessez/Gene_count_datasets/Genes/genes_rand_htseq.txt',dtype=str)
+else:
+    rand_genes = np.loadtxt('/data/jessez/Gene_count_datasets/Genes/genes_rand.txt',dtype=str)
+qual_rand_genes = extract_gene_stats(qual,rand_genes)
+
 # print stuff: also include L0 norm of cluster assignment to 000011111 or 111100000, mean of pvalues of D1/D2 genes
 for i in range(0,len(qual_d1d2)-1):
     sys.stdout.write(qual_d1d2[i][0]+":")
@@ -166,5 +174,11 @@ i = 1
 for entry in qual:
     sum += entry[2]
     i += 1
-sys.stdout.write(str(sum/i))
+sys.stdout.write(str(sum/i)+"\t")
 
+sum = 0
+i = 1
+for entry in qual_rand_genes:
+    sum += entry[2]
+    i += 1
+sys.stdout.write(str(sum/i))
