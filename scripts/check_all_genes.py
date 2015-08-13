@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 
-# This script takes 4 arguments as inputs: the data matrix, the cell labels (as determined by a clustering algorithm), names of all genes, names of potentially important genes. The script then attempts to figure out how well the clusters align with genes known to separate D1 cells from D2 cells. i.e. The script attempts to answer the question: Do the clusters correspond to D1 or D2 cells?
+# This script takes 4 arguments as inputs: 
+#  -the data matrix
+#  -the cell labels (as determined by a clustering algorithm)
+#  -names of all genes
+#  -names of potentially important genes
+#  -a flag corresponding to either "htseq" or not htseq, which would decide which set of random genes to load
+# The script then attempts to figure out how well the clusters align with genes known to separate D1 cells from D2 cells. i.e. The script attempts to answer the question: Do the clusters correspond to D1 or D2 cells?
 
 # Ideal results to confirm hypothesis that clusters correspond to D1/D2: Isl1, Drd1, Sfxn1, Nrxn1 are assigned to one cluster. Drd2, Penk, Sp9, Gpr52, Gpr88 are assigned to the other cluster. All p values are very small. 
 
@@ -122,13 +128,14 @@ if len(sys.argv) > 4:
     important_genes = np.loadtxt(sys.argv[4],dtype=str)
     qual_important_genes = extract_gene_stats(qual,important_genes)
 
-# test random genes                                                                                                                                                             
-rand_flag = sys.argv[5]
-if rand_flag == 'htseq':
-    rand_genes = np.loadtxt('/data/jessez/Gene_count_datasets/Genes/genes_rand_htseq.txt',dtype=str)
-else:
-    rand_genes = np.loadtxt('/data/jessez/Gene_count_datasets/Genes/genes_rand.txt',dtype=str)
-qual_rand_genes = extract_gene_stats(qual,rand_genes)
+# test random genes                                                                                                                                               
+if len(sys.argv) > 5:             
+    rand_flag = sys.argv[5]
+    if rand_flag == 'htseq':
+        rand_genes = np.loadtxt('/data/jessez/Gene_count_datasets/Genes/genes_rand_htseq.txt',dtype=str)
+    else:
+        rand_genes = np.loadtxt('/data/jessez/Gene_count_datasets/Genes/genes_rand.txt',dtype=str)
+    qual_rand_genes = extract_gene_stats(qual,rand_genes)
 
 # print stuff: also include L0 norm of cluster assignment to 000011111 or 111100000, mean of pvalues of D1/D2 genes
 for i in range(0,len(qual_d1d2)-1):
@@ -162,23 +169,27 @@ for entry in qual_d1d2:
     i += 1
 sys.stdout.write(str(sum/i)+"\t")
 
-sum = 0
-i = 1
-for entry in qual_important_genes:
-    sum += entry[2]
-    i += 1
-sys.stdout.write(str(sum/i)+"\t")
+if len(sys.argv) > 4:
+    sum = 0
+    i = 1
+    for entry in qual_important_genes:
+        sum += entry[2]
+        i += 1
+    sys.stdout.write(str(sum/i)+"\t")
 
 sum = 0
 i = 1
 for entry in qual:
     sum += entry[2]
     i += 1
-sys.stdout.write(str(sum/i)+"\t")
 
-sum = 0
-i = 1
-for entry in qual_rand_genes:
-    sum += entry[2]
-    i += 1
-sys.stdout.write(str(sum/i))
+if len(sys.argv) > 5:
+    sys.stdout.write(str(sum/i)+"\t")
+    sum = 0
+    i = 1
+    for entry in qual_rand_genes:
+        sum += entry[2]
+        i += 1
+    sys.stdout.write(str(sum/i))
+else:
+    sys.stdout.write(str(sum/i))

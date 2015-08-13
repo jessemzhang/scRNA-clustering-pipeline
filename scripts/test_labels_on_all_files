@@ -1,65 +1,53 @@
 #!/bin/bash 
 
-# This script will repeatedly test one clustering method on a dataset
+# This script will test a set of labels for lots of datasets
 
-clust_language=$1   # either 'Rscript' or 'python'
-clust_method=$2     # file name of clustering script
-data=$3
-iter=$4
-i=`echo $data | awk -F "/" '{print $NF}'`
+all_labels=$1
+labels_name=`echo $1 | awk -F "/" '{print $NF}' | awk -F "." '{print $1}'`
 
 data_dir="/data/jessez/Gene_count_datasets"
-results_dir="/data/jessez/Gene_count_clustering_results/"$clust_method"_"$i
-results_labels_dir=$results_dir"/labels"
+results_dir="/data/jessez/Gene_count_clustering_results/testing_"$labels_name
+results_dir=`echo $results_dir | awk -F "." '{print $1}'`
 results_new_genes_dir=$results_dir"/new_genes"
 results_outliers_dir=$results_dir"/outliers"
 results_outfile=$results_dir"/out"
+temp_labels_dir=$results_dir"/temp_labels"
 
 mkdir $results_dir
-mkdir $results_labels_dir
 mkdir $results_new_genes_dir
 mkdir $results_outliers_dir
+mkdir $temp_labels_dir
 touch $results_outfile
 
 pipeline() {
 
-    ii=$1
+    i=$1
+    batch_type=$2
+    data=$batch_dir"/"$i
+    echo $i
 
-    labels=$results_labels_dir"/labels_"$i"_"$ii # file to save labels in
-
-	# obtain cell labels and batch type
-	if [ `echo $i | grep 22_23 | wc -l` == 1 ]; then
-	    cells=$data_dir"/Cells/cells_22_23.txt"
-	    batch_type="22_23"
-	elif [ `echo $i | grep 24_28_30 | wc -l` == 1 ]; then
-	    cells=$data_dir"/Cells/cells_24_28_30.txt"
-	    batch_type="24_28_30"
-	elif [ `echo $i | grep 22 | wc -l` == 1 ]; then
-	    cells=$data_dir"/Cells/cells_22.txt"
-	    batch_type="single"
-	elif [ `echo $i | grep 24 | wc -l` == 1 ]; then
-	    cells=$data_dir"/Cells/cells_24.txt"
-	    batch_type="single"
-	elif [ `echo $i | grep 34 | wc -l` == 1 ]; then
-      	    cells=$data_dir"/Cells/cells_34.txt"
-	    batch_type="single"
-	elif [ `echo $i | grep 35 | wc -l` == 1 ]; then
-	    cells=$data_dir"/Cells/cells_35.txt" 
-	    batch_type="single"
-	else
-	    batch_type="all"
-	    cells=$data_dir"/Cells/cells_"$batch_type".txt"
-	fi
-	if [ `echo $i | grep Outliers | wc -l` == 1 ]; then
+        # determine type of cells
+        if [ `echo $i | grep Outliers | wc -l` == 1 ]; then
             cells=$data_dir"/Cells/cells_NoOutliers.txt"
+        else
+            if [ "$batch_type" == "single" ]; then
+                if [ `echo $i | grep 22 | wc -l` == 1 ]; then
+                    cells=$data_dir"/Cells/cells_22.txt"
+                elif [ `echo $i | grep 24 | wc -l` == 1 ]; then
+                    cells=$data_dir"/Cells/cells_24.txt"
+                elif [ `echo $i | grep 34 | wc -l` == 1 ]; then
+                    cells=$data_dir"/Cells/cells_34.txt"
+                else
+                    cells=$data_dir"/Cells/cells_35.txt"
+                fi
+            else
+                cells=$data_dir"/Cells/cells_"$batch_type".txt"
+            fi
         fi
 
-	# Run the clustering algorithm
-	if [ "$clust_language" == "Rscript" ]; then
-	    Rscript "./clustering_scripts/"$clust_method".R" $data | awk -F " " '{print $2}' > $labels
-	else
-	    python "./clustering_scripts/"$clust_method".py" $data $results_outliers_dir"/outliers_"$i"_"$ii $cells  > $labels
-	fi
+	# truncate labels to match size of data matrix
+	labels=$temp_labels_dir"/temp_labels_"$i
+	python truncate_labels.py $all_labels $cells > $labels
 
 	# Save the number of samples in each cluster
 	count_0=`cat $labels | grep 0 | wc -l`
@@ -81,7 +69,7 @@ pipeline() {
 	fi
 
 	# Extract important genes
-	new_genes=$results_new_genes_dir"/new_genes_"$i"_"$ii
+	new_genes=$results_new_genes_dir"/new_genes_"$i
 	if [ `echo $i | grep d1d2 | wc -l` == 1 ]; then
 	    # check to see if we're looking at a d1d2 dataset
 	    # (in which case we extract genes using original dataset)
@@ -107,29 +95,38 @@ pipeline() {
 	fi
 	python RF_to_select_important_genes.py $check_data $labels $genes > $new_genes
 
-	# Check for consistency with D1 D2 genes
+	# Check for consistency with D1 D2 genes using d1d2 genes
 	if [ `echo $i | grep htseq | wc -l` == 1 ]; then
 	    d1d2_check=`python check_all_genes.py $check_data $labels $genes $new_genes htseq`   
 	else
 	    d1d2_check=`python check_all_genes.py $check_data $labels $genes $new_genes asdf`
 	fi
 
-	# Check for consistency with D1 D2 genes using d1d2 "truth" labels                                                                                                
-        d1d2_truth=`python check_against_truth_labels.py $labels $cells`
-	
+	# Check for consistency with D1 D2 genes using d1d2 "truth" labels
+	d1d2_truth=`python check_against_truth_labels.py $labels $cells`
+
 	# Save all data in new line
-	new_line=$i"_"$ii"\t"$clust_method"\t"$count_0"\t"$count_1"\t"$clustering_quality"\t"$batch_check"\t"$d1d2_check"\t"$d1d2_truth
+	new_line=$i"\t"$count_0"\t"$count_1"\t"$clustering_quality"\t"$batch_check"\t"$d1d2_check"\t"$d1d2_truth
 	echo -e $new_line >> $results_outfile
     
 }
 
 # function to run clustering for a type of dataset
 parallelize_pipeline() {
+    
+    local batch_type=$1 # either "all", "NoOutliers", "22_23", "24_28_30", or "single"
+    batch_dir=$data_dir"/Datasets/batch_"$batch_type
+
     # Iterate through each dataset
-    for ii in $(seq 1 $iter); 
-    do 
-	pipeline $ii &
+    for i in `ls $batch_dir`;
+    do
+	pipeline $i $batch_type &
     done;
 }
 
-parallelize_pipeline
+parallelize_pipeline "NoOutliers"
+parallelize_pipeline "single"
+parallelize_pipeline "22_23"
+parallelize_pipeline "24_28_30"
+parallelize_pipeline "all"
+

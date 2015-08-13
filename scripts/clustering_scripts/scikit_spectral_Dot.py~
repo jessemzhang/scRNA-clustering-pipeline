@@ -7,10 +7,12 @@ import sklearn.metrics
 from clustering_functions import *
 
 def compute_affinity_matrix(X):
-    # valid metrics are: 'rbf', 'sigmoid', 'polynomial', 'poly', 'linear', 'cosine'
-    D = sklearn.metrics.pairwise.rbf_kernel(X,gamma=10e-6)
-#    D = sklearn.metrics.pairwise.pairwise_kernels(X,metric='rbf')
-    return D
+    # Find the L2 norm between each two pair of points..
+    scale = np.transpose(np.tile(np.sqrt(np.sum(np.square(X),1)),(np.shape(X)[1],1)))
+    # normalize each sample so that its L2 norm is 1
+    Y = np.divide(X,scale)
+    Z = np.dot(Y,np.transpose(Y))
+    return np.absolute(Z)
 
 def run_clustering(X):
     # Run spectral clustering. 
@@ -22,12 +24,14 @@ def run_clustering(X):
 
 if __name__ == "__main__":
 
-    # LOAD DATA
+    # LOAD DATA                                                                                  
     X = np.loadtxt(sys.argv[1])
     loc = sys.argv[2]
     cells = np.loadtxt(sys.argv[3])
-    n = float(np.shape(X)[0]) # number of samples                                                                                                                                         
+    
+    n = float(np.shape(X)[0]) # number of samples                                                       
 
     labels = cluster_and_account_for_outliers(X,n,run_clustering,loc,cells)
     for label in labels:
         print label
+

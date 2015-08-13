@@ -1,0 +1,12 @@
+#!/bin/bash 
+
+# This script will test a clustering method for lots of datasets
+
+for i in `ls ./clustering_scripts`;
+do
+    if [ `echo $i | grep scikit | wc -l` == 1 ]; then
+	script=`echo $i |sed 's/.py//g'`
+	echo $script
+	./run_pipeline_on_all_files python $script
+    fi
+done;

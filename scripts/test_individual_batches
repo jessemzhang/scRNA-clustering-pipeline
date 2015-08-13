@@ -1,0 +1,10 @@
+#!/bin/bash
+
+touch temp
+labels_dir='../labels/labels_batches_299_samples_total/'
+for i in `ls $labels_dir`;
+do
+    a=`python check_batch_effects.py $labels_dir$i '/data/jessez/Gene_count_datasets/Batch_nums/batch_num_NoOutliers.txt'`
+    b=`python check_all_genes.py $1 $labels_dir$i '/data/jessez/Gene_count_datasets/Genes/genes.txt' | awk '{print $2"\t"$4"\t"$5"\t"$6}'`
+    echo -e $a"\t"$b >> temp
+done
