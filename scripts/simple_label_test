@@ -1,0 +1,57 @@
+#!/bin/bash 
+
+# This script will test a set of labels for lots of datasets
+
+all_labels=$1
+labels_name=`echo $1 | awk -F "/" '{print $NF}' | awk -F "." '{print $1}'`
+
+data_dir="/data/jessez/Gene_count_datasets"
+
+pipeline() {
+
+        # determine type of cells
+        for file in `ls $data_dir"/Cells"`; 
+        do
+            if [ `cat $all_labels | wc -l` == `cat $data_dir"/Cells/"$file | wc -l` ]; then
+                cells=$data_dir"/Cells/"$file
+	        batch_type=`echo $cells | awk -F "cells_" '{print $2}' | awk -F ".txt" '{print $1}'`
+            fi
+        done
+
+	# echo $cells
+	# echo $batch_type
+
+	# truncate labels to match size of data matrix                                          
+        labels="temp_"$labels_name
+        python truncate_labels.py $all_labels $cells > $labels
+
+	# Save the number of samples in each cluster
+	count_0=`cat $labels | grep 0 | wc -l`
+	count_1=`cat $labels | grep 1 | wc -l`
+
+	# Analyze batch effect
+	if [ `echo $batch_type | awk '{print length($0)}'` > 2 ]; then
+	    if [ `echo $batch_type | grep Outlier | wc -l` == 1 ]; then
+		batches=$data_dir"/Batch_nums/batch_num_NoOutliers.txt"
+	    else
+		batches=$data_dir"/Batch_nums/batch_num_"$batch_type".txt"
+	    fi
+	    batch_check=`python check_batch_effects.py $labels $batches`
+	else
+	    batch_check='0'
+	fi
+
+	# Check for consistency with D1 D2 genes using d1d2 "truth" labels
+	d1d2_truth=`python check_against_truth_labels.py $labels $cells`
+
+	# Save all data in new line
+	echo "# of cells in cluster 0: "$count_0
+	echo "# of cells in cluster 1: "$count_1
+	echo "batch effect log pvalue: "$batch_check
+	echo "D1 D2 misclassifi. rate: "$d1d2_truth
+	# new_line=$count_0"\t"$count_1"\t"$batch_check"\t"$d1d2_truth
+	# echo -e $new_line
+    
+}
+
+pipeline

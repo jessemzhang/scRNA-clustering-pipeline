@@ -110,7 +110,15 @@ pipeline() {
 	    else
 		genes=$data_dir"/Genes/genes.txt"
 	    fi
+
+	    check_data="/data/jessez/Gene_count_datasets/Datasets/X.txt"
+
 	    python RF_to_select_important_genes.py $check_data $labels $genes > $new_genes
+
+	    echo $check_data
+	    echo $labels
+	    echo $genes
+	    echo $new_genes
 
 	    # Check for consistency with D1 D2 genes using d1d2 genes
 	    if [ `echo $i | grep htseq | wc -l` == 1 ]; then
@@ -140,13 +148,14 @@ parallelize_pipeline() {
     # Iterate through each dataset
     for i in `ls $batch_dir`;
     do
-	pipeline $i $batch_type &
+	pipeline $i $batch_type
     done;
 }
 
-parallelize_pipeline "NoOutliers"
-parallelize_pipeline "single"
-parallelize_pipeline "22_23"
-parallelize_pipeline "24_28_30"
-parallelize_pipeline "all"
+# parallelize_pipeline "NoOutliers"
+# parallelize_pipeline "single"
+# parallelize_pipeline "22_23"
+# parallelize_pipeline "24_28_30"
+# parallelize_pipeline "all"
 
+parallelize_pipeline "discrete"
